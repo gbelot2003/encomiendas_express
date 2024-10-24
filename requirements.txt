@@ -5,3 +5,5 @@ openai
 Flask-Migrate
 pytest
 python-dotenv
+chromadb
+PyMuPDF

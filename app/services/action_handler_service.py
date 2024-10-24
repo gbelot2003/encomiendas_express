@@ -15,6 +15,12 @@ class ActionHandleService:
         # Verificar si el usuario tiene un número de teléfono en la base de datos
         contacto = VerifyContactAction().verificar_contacto(self.user_id)        
 
+        # Buscar fragmentos relevantes en ChromaDB
+        chromadb_repo = ChromaDBRepo()
+        relevant_chunks = chromadb_repo.buscar_fragmentos_relevantes(self.prompt)
+        if relevant_chunks:
+            self.messages.append(relevant_chunks)
+
         # Buscar historial de conversación
         conversation_history_action = ConversationHistoryAction()
         chat_history_messages = conversation_history_action.compilar_conversacion(self.user_id)
