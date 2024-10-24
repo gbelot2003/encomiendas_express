@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Chat en Tiempo Real{% endblock %}</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.10.5/font/bootstrap-icons.min.css"
+        rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="icon" href="/static/favicon.ico" type="image/x-icon">
+
+</head>
+
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark z-index-1" style="background-color: purple">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">Chat App</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/">Chat</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Contenedor Principal del Chat -->
+    <div class="container-fluid py-3 d-flex justify-content-center align-items-center"
+        style="height: calc(100vh - 56px); background-color: #f0f2f5;">
+        <div class="row justify-content-center w-100">
+            <!-- Contenedor de WhatsApp -->
+            <div class="whatsapp-container">
+                <!-- Barra superior -->
+                <div class="whatsapp-header d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center">
+                        <img src="https://www.w3schools.com/w3images/avatar2.png" class="rounded-circle" width="40px"
+                            alt="avatar">
+                        <span class="ms-3">Asistente Virtual Encomiendas Express</span>
+                    </div>
+                    <div>
+                        <i class="bi bi-search me-3"></i>
+                        <i class="bi bi-three-dots-vertical"></i>
+                    </div>
+                </div>
+
+                <!-- Contenedor del chat -->
+                <div class="chat-container" id="log">
+                    <div id="response-log" class="message-container"></div>
+                </div>
+
+                <!-- Barra inferior -->
+                <div class="whatsapp-footer">
+                    <input type="text" id="message" name="message" placeholder="Escribe un mensaje...">
+                    <button type="submit" id="send-btn">
+                        <i class="bi bi-send-fill"></i>
+                    </button>
+                </div>
+
+                <!-- Sección URL y Número de Teléfono -->
+                <div class="bg-white mt-2">
+                    <div class="row">
+                        <div class="col-12 mb-3">
+                            <label for="url">URL del API:</label>
+                            <input type="text" id="url" name="url" class="form-control"
+                                value="http://127.0.0.1:5000/api/message" placeholder="http://example.com/endpoint"
+                                required>
+                        </div>
+                        <div class="col-12 mb-3">
+                            <label for="from_number">Número de Teléfono Simulado (From):</label>
+                            <input type="text" id="from_number" name="from_number" class="form-control"
+                                placeholder="+14155551234" value="+14155551234">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // Al hacer clic en el botón enviar en el chat
+        document.getElementById('send-btn').addEventListener('click', function (event) {
+            event.preventDefault();
+            sendMessage();
+        });
+
+        // Enviar mensaje con la tecla Enter en el chat
+        document.getElementById('message').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                event.preventDefault();
+                sendMessage();
+            }
+        });
+
+        // Función para enviar el mensaje en el chat
+        function sendMessage() {
+            const url = document.getElementById('url').value;
+            const message = document.getElementById('message').value;
+            const from_number = document.getElementById('from_number').value;
+
+            if (message) {
+                axios.post(url, { url, message, from_number })
+                    .then(response => {
+                        const responseMessage = response.data.response;
+                        addMessageToChat(responseMessage, 'other');  // Añadir la respuesta del servidor al chat
+                    })
+                    .catch(error => {
+                        console.error('Error al enviar el mensaje:', error);
+                    });
+
+                addMessageToChat(message, 'user');  // Añadir el mensaje del usuario al chat
+                document.getElementById('message').value = '';  // Limpiar el campo
+            }
+        }
+
+        // Función para añadir un mensaje al chat
+        function addMessageToChat(message, sender) {
+            let logDiv = document.getElementById('response-log');
+
+            // Crear contenedor del mensaje
+            let messageElement = document.createElement('div');
+            messageElement.classList.add('message', sender === 'user' ? 'user-message' : 'other-message');
+
+            // Crear el contenido HTML del mensaje
+            messageElement.innerHTML = `
+                <span>${message}</span>
+                <span class="message-time">${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+            `;
+
+            logDiv.appendChild(messageElement);
+            logDiv.scrollTop = logDiv.scrollHeight;  // Scroll automático
+        }
+    </script>
+</body>
+
+</html>

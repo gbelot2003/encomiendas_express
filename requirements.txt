@@ -1,0 +1,7 @@
+Flask 
+Flask-SQLAlchemy
+SQLAlchemy
+openai
+Flask-Migrate
+pytest
+python-dotenv
