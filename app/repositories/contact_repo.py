@@ -1,5 +1,5 @@
 # app/repositories/contact_repo.py
-from extensions import db
+from app.extensions import db
 from app.models.contact_model import Contact as Contacto
 
 class ContactRepo:
