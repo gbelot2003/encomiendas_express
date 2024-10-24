@@ -15,7 +15,6 @@ def configure_routes(app):
         from_number = data.get('from_number', '+14155551234')
 
         response = OpenAIService().handle_request(message_body, from_number)
-        response_data = response
         
-        return jsonify({"status": "success", "response": response_data})
+        return jsonify({"status": "success", "response": response})
         
