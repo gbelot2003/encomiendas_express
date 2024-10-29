@@ -5,7 +5,6 @@ from app.actions.verify_contact_action import VerifyContactAction
 from app.repositories.chromadb_repo import ChromaDBRepo
 from app.services.conversation_history_service import ConversationHistoryAction
 
-
 class ActionHandleService:  
     def __init__(self, user_id, prompt):
         self.user_id = user_id
