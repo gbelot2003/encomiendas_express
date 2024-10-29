@@ -1,4 +1,5 @@
 # app/services/action_handler_service.py
+from app.actions.box_request_action import BoxRequestAction
 from app.actions.distance_calculation_action import DistanceCalculationAction
 from app.actions.name_action import NameAction
 from app.actions.verify_contact_action import VerifyContactAction
@@ -10,7 +11,8 @@ class ActionHandleService:
         self.user_id = user_id
         self.prompt = prompt
         self.messages = []
-    
+        self.box_request_action = BoxRequestAction(user_id)  # Instancia de BoxRequestAction
+
     def handle_actions(self):
         # Verificar si el usuario tiene un número de teléfono en la base de datos
         contacto = VerifyContactAction().verificar_contacto(self.user_id)        
@@ -43,5 +45,11 @@ class ActionHandleService:
             # Asegurarnos de que el mensaje de distancia sea el último en agregarse
             self.messages.append({"role": "assistant", "content": distance_message})
             return [{"role": "assistant", "content": distance_message}]  # Devolvemos la respuesta de distancia como única salida
+        
+        # Manejar la solicitud de caja
+        elif "solicitar caja" in self.prompt or self.box_request_action.state["step"] != "start":
+            box_request_message = self.box_request_action.handle_box_request(self.prompt)
+            self.messages.append({"role": "assistant", "content": box_request_message})
+            return [{"role": "assistant", "content": box_request_message}]
 
         return self.messages
