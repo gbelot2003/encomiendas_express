@@ -1,5 +1,5 @@
 # app/services/action_handler_service.py
-
+from app.actions.distance_calculation_action import DistanceCalculationAction
 from app.actions.name_action import NameAction
 from app.actions.verify_contact_action import VerifyContactAction
 from app.repositories.chromadb_repo import ChromaDBRepo
@@ -31,7 +31,17 @@ class ActionHandleService:
         name_message = name_action.process_name()
         if name_message:
             self.messages.append(name_message)
-    
         
-        return self.messages
+        # Manejar la solicitud de cálculo de distancia
+        if "distancia a" in self.prompt:
+            # Extraer la dirección de destino del prompt
+            destination_address = self.prompt.split("distancia a")[-1].strip()
+            distance_action = DistanceCalculationAction(destination_address)
+            distance_message = distance_action.handle()
+            
+            print(distance_message)
+            # Asegurarnos de que el mensaje de distancia sea el último en agregarse
+            self.messages.append({"role": "assistant", "content": distance_message})
+            return [{"role": "assistant", "content": distance_message}]  # Devolvemos la respuesta de distancia como única salida
 
+        return self.messages

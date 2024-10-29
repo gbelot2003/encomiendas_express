@@ -20,14 +20,12 @@ class OpenAIService:
         action_handle_service = ActionHandleService(from_number, prompt)
         messages = action_handle_service.handle_actions()
 
-        # Ensure messages is not None and is a list
-        if messages is None:
-            messages = []
+        # Verificar si el mensaje de distancia ya fue generado
+        if len(messages) == 1 and "distancia" in messages[0]["content"]:
+            # Retornar directamente el mensaje de distancia sin enviarlo a OpenAI
+            return messages[0]["content"]
 
-        # Append the user's prompt to the messages list
-        messages.append({"role": "user", "content": prompt})
-
-        # Enviar los mensajes a la API de OpenAI
+        # Enviar los mensajes a la API de OpenAI si no es una solicitud de distancia
         response = client.chat.completions.create(
             model="gpt-3.5-turbo", messages=messages, max_tokens=200, temperature=0.1  # type: ignore
         )
