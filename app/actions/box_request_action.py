@@ -2,16 +2,17 @@
 
 class BoxRequestAction:
     def __init__(self, user_id):
-        # Inicializamos el estado de la conversación del usuario
         self.user_id = user_id
+        # Estado del flujo de conversación
         self.state = {
             "step": "start",
             "data": {}
         }
 
     def handle_box_request(self, prompt):
-        # Flujo de conversación para solicitar una caja
+        """Gestiona el flujo paso a paso para un pedido de caja."""
         step = self.state["step"]
+        print(f"Current step: {step}, Received prompt: {prompt}")  # Depuración: Verificar el paso actual y el prompt recibido
 
         if step == "start":
             self.state["step"] = "ask_address"
@@ -21,18 +22,21 @@ class BoxRequestAction:
             # Guardamos la dirección proporcionada y pedimos el tamaño de la caja
             self.state["data"]["address"] = prompt
             self.state["step"] = "ask_box_size"
+            print(f"Address saved: {self.state['data']['address']}")  # Depuración: Confirmar dirección guardada
             return "Gracias. ¿Qué tamaño de caja necesitas? Tenemos tamaños pequeña, mediana y grande."
 
         elif step == "ask_box_size":
             # Guardamos el tamaño de la caja y pedimos la fecha de entrega
             self.state["data"]["box_size"] = prompt
             self.state["step"] = "ask_delivery_date"
+            print(f"Box size saved: {self.state['data']['box_size']}")  # Depuración: Confirmar tamaño de caja guardado
             return "Perfecto. ¿Cuál es la fecha y hora de entrega preferida?"
 
         elif step == "ask_delivery_date":
             # Guardamos la fecha de entrega y generamos el resumen del pedido
             self.state["data"]["delivery_date"] = prompt
             self.state["step"] = "confirm"
+            print(f"Delivery date saved: {self.state['data']['delivery_date']}")  # Depuración: Confirmar fecha de entrega guardada
 
             # Generar resumen
             address = self.state["data"]["address"]
@@ -46,6 +50,6 @@ class BoxRequestAction:
 
         elif step == "confirm":
             # Confirmamos el pedido y limpiamos el estado de conversación
+            print("Pedido confirmado.")  # Depuración: Confirmación final
             self.state = {"step": "start", "data": {}}  # Reiniciar estado para futuras interacciones
             return "Pedido confirmado. Gracias por tu solicitud. Enviaremos una notificación con más detalles."
-

@@ -1,4 +1,4 @@
-# app/services/openai_service.py
+# archivo: app/services/openai_service.py
 import os
 from openai import OpenAI
 from dotenv import load_dotenv
@@ -20,12 +20,14 @@ class OpenAIService:
         action_handle_service = ActionHandleService(from_number, prompt)
         messages = action_handle_service.handle_actions()
 
-        # Verificar si el mensaje de distancia ya fue generado
-        if len(messages) == 1 and "distancia" in messages[0]["content"]:
-            # Retornar directamente el mensaje de distancia sin enviarlo a OpenAI
-            return messages[0]["content"]
+        # Verificar si el mensaje es generado exclusivamente por BoxRequestAction o DistanceCalculationAction
+        if len(messages) == 1:
+            message_content = messages[0]["content"]
+            if "distancia" in message_content or "¿Por favor, proporciona la dirección de entrega de la caja?" in message_content:
+                # Retornar directamente el mensaje sin enviarlo a OpenAI
+                return message_content
 
-        # Enviar los mensajes a la API de OpenAI si no es una solicitud de distancia
+        # Enviar los mensajes a la API de OpenAI si no es una solicitud específica de distancia o caja
         response = client.chat.completions.create(
             model="gpt-3.5-turbo", messages=messages, max_tokens=200, temperature=0.1  # type: ignore
         )
