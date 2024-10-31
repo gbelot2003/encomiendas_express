@@ -1,6 +1,8 @@
 # archivo: app/actions/box_request_action.py
 
 from app.repositories.box_request_state_repo import BoxRequestStateRepo
+from app.repositories.box_request_repo import BoxRequestRepo  # Importar el repositorio para guardar el pedido
+from app.utils.date_converter import DateConverter  # Importar la clase de conversión
 
 class BoxRequestAction:
     def __init__(self, user_id):
@@ -56,8 +58,31 @@ class BoxRequestAction:
                     f"Enganche de $30 USD. ¿Deseas confirmar el pedido?")
 
         elif step == "confirm":
-            # Confirmamos el pedido y limpiamos el estado de conversación
+            # Confirmamos el pedido, guardamos en box_request y limpiamos el estado de conversación
             print("Pedido confirmado.")  # Depuración: Confirmación final
-            self.state = {"step": "start", "data": {}}  # Reiniciar estado para futuras interacciones
+            
+            # Convertir delivery_date a un objeto datetime usando DateConverter
+            try:
+                delivery_date_str = self.state["data"]["delivery_date"]
+                delivery_date = DateConverter.parse_date(delivery_date_str)
+            except ValueError as e:
+                print(f"Error en el formato de fecha: {e}")
+                return "Error al procesar la fecha y hora de entrega. Asegúrate de usar un formato reconocible como 'hoy a las 8 pm' o 'mañana a las 12 pm'."
+
+            # Guardar los datos en la tabla box_request
+            BoxRequestRepo.create_box_request(
+                customer_name="NombreCliente",  # Cambiar por el nombre del cliente si está disponible
+                address=self.state["data"]["address"],
+                box_size=self.state["data"]["box_size"],
+                delivery_date=delivery_date,  # Usar el objeto datetime aquí
+                engagement_fee=30.0,  # Enganche fijo de $30
+                delivery_cost=0.0,  # Ajustar con el cálculo real del costo de entrega si es necesario
+                total_cost=30.0,  # Total con el enganche
+                contact_number="Contacto"  # Cambiar por el número de contacto si está disponible
+            )
+            
+            # Reiniciar el estado
+            self.state = {"step": "start", "data": {}}
             BoxRequestStateRepo.delete_state(self.user_id)  # Eliminar el estado de la conversación
+
             return "Pedido confirmado. Gracias por tu solicitud. Enviaremos una notificación con más detalles."
