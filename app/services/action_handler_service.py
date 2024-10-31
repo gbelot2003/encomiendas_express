@@ -15,7 +15,7 @@ class ActionHandleService:
         self.box_request_action = BoxRequestAction(user_id)  # Instancia de BoxRequestAction
 
     def handle_actions(self):
-        # Bloqueo del flujo para BoxRequestAction
+        # Priorizar el flujo de BoxRequestAction
         if "solicitar caja" in self.prompt or self.box_request_action.state["step"] != "start":
             print("BoxRequestAction is active")  # Depuración para confirmar el flujo activo
             box_request_message = self.box_request_action.handle_box_request(self.prompt)
@@ -25,27 +25,22 @@ class ActionHandleService:
             self.messages = [{"role": "assistant", "content": box_request_message}]
             return self.messages  # Retornar exclusivamente la respuesta de BoxRequestAction
 
-        # Verificar si el usuario tiene un número de teléfono en la base de datos
+        # Proceso habitual si BoxRequestAction no está activo
         contacto = VerifyContactAction().verificar_contacto(self.user_id)
-
-        # Buscar fragmentos relevantes en ChromaDB
         chromadb_repo = ChromaDBRepo()
         relevant_chunks = chromadb_repo.buscar_fragmentos_relevantes(self.prompt)
         if relevant_chunks:
             self.messages.append(relevant_chunks)
 
-        # Buscar historial de conversación
         conversation_history_action = ConversationHistoryAction()
         chat_history_messages = conversation_history_action.compilar_conversacion(self.user_id)
         self.messages.extend(chat_history_messages)
 
-        # Procesar el nombre del contacto
         name_action = NameAction(contacto, self.prompt)
         name_message = name_action.process_name()
         if name_message:
             self.messages.append(name_message)
         
-        # Manejar la solicitud de cálculo de distancia
         if "distancia a" in self.prompt:
             destination_address = self.prompt.split("distancia a")[-1].strip()
             distance_action = DistanceCalculationAction(destination_address)

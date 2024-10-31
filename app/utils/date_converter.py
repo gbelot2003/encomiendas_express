@@ -4,8 +4,8 @@ from datetime import datetime, timedelta
 import re
 import locale
 
-# Asegurarnos de que la configuración regional esté en español
-locale.setlocale(locale.LC_TIME, 'es_ES.UTF-8')  # Configura según el sistema, 'es_ES' para sistemas Unix; puede variar
+# Asegurar configuración regional en español
+locale.setlocale(locale.LC_TIME, 'es_ES.UTF-8')  # Cambiar según el sistema; 'es_ES.UTF-8' para sistemas Unix
 
 class DateConverter:
     @staticmethod
@@ -53,13 +53,14 @@ class DateConverter:
 
     @staticmethod
     def _extract_time(natural_date_str):
-        """Extrae la hora y minutos de expresiones como 'a las 8 pm'."""
-        match = re.search(r"(\d{1,2})\s*([ap]\.?m\.?)", natural_date_str)
+        """Extrae la hora y minutos de expresiones como 'a las 8 pm' o 'a las 6:30 pm'."""
+        match = re.search(r"(\d{1,2}):?(\d{2})?\s*([ap]\.?m\.?)", natural_date_str)
         if not match:
             raise ValueError("No se encontró una hora válida en la expresión.")
 
         hour = int(match.group(1))
-        period = match.group(2)
+        minute = int(match.group(2)) if match.group(2) else 0
+        period = match.group(3)
 
         # Convertir la hora al formato de 24 horas
         if 'p' in period and hour != 12:
@@ -67,4 +68,4 @@ class DateConverter:
         elif 'a' in period and hour == 12:
             hour = 0
 
-        return hour, 0  # Devolver minutos como 0 ya que no se especifica
+        return hour, minute
