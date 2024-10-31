@@ -9,12 +9,13 @@ class BoxRequestAction:
     ALLOWED_COUNTRIES = ["Honduras", "El Salvador", "Guatemala", "Nicaragua", "Mexico"]
 
     def __init__(self, user_id):
-        self.user_id = user_id
+        self.user_id = user_id  # Usamos user_id directamente para contact_number
         saved_state = BoxRequestStateRepo.get_state(user_id)
         if saved_state:
             self.state = {"step": saved_state.step, "data": saved_state.data}
         else:
             self.state = {"step": "start", "data": {}}
+
 
     def handle_box_request(self, prompt):
         step = self.state["step"]
@@ -85,7 +86,7 @@ class BoxRequestAction:
                 return "Error al procesar la fecha y hora de entrega. Usa un formato como 'hoy a las 8 pm' o 'mañana a las 12 pm'."
 
         elif step == "confirm":
-            # Convertimos la fecha de vuelta a datetime al guardar el pedido
+            # Convertimos la fecha de cadena a datetime al guardar el pedido
             delivery_date = datetime.strptime(self.state["data"]["delivery_date"], '%Y-%m-%d %H:%M:%S')
             BoxRequestRepo.create_box_request(
                 customer_name=self.state["data"]["full_name"],
@@ -95,7 +96,7 @@ class BoxRequestAction:
                 engagement_fee=30.0,
                 delivery_cost=0.0,
                 total_cost=30.0,
-                contact_number="Contacto",  # Cambiar por el número real de contacto si está disponible
+                contact_number=self.user_id,  # Usamos user_id como contact_number
                 country=self.state["data"]["country"],
                 destination_address=self.state["data"]["destination_address"]
             )
