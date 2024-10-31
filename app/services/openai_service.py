@@ -21,12 +21,11 @@ class OpenAIService:
         action_handle_service = ActionHandleService(from_number, prompt)
         messages = action_handle_service.handle_actions()
 
-        # Verificar si la respuesta es exclusivamente de BoxRequestAction
-        if len(messages) == 1 and "BoxRequestAction" in messages[0]["content"]:
-            # Retornar directamente el mensaje de BoxRequestAction
+        # Si BoxRequestAction está activo, retornar exclusivamente su mensaje y evitar llamadas a OpenAI
+        if ActionHandleService.box_request_active.get(from_number, False):
             return messages[0]["content"]
 
-        # Enviar los mensajes a la API de OpenAI si no es una solicitud de BoxRequestAction
+        # Enviar los mensajes a la API de OpenAI solo si BoxRequestAction no está activo
         response = client.chat.completions.create(
             model="gpt-3.5-turbo", messages=messages, max_tokens=200, temperature=0.1  # type: ignore
         )
