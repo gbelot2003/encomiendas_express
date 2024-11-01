@@ -191,10 +191,13 @@ class BoxRequestAction:
                     country=self.state["data"]["country"],
                     destination_address=self.state["data"].get("destination_address", "No proporcionada")
                 )
+                db.session.commit()  # <-- Asegúrate de que la transacción se confirme
+                print("Debug: Pedido guardado en la base de datos")  # <-- Línea para depuración
             except Exception as e:
                 print("Error al crear el pedido en la base de datos:", e)
+                db.session.rollback()  # <-- Si hay un error, revierte la transacción
 
-            db.session.commit()  # <-- Asegúrate de que la transacción se confirme
+            # Borrar el estado después de guardar el pedido
             self.state = {"step": "start", "data": {}}
             BoxRequestStateRepo.delete_state(self.user_id)
             return "Pedido confirmado. Gracias por tu solicitud. Enviaremos una notificación con más detalles."

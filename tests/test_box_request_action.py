@@ -119,6 +119,7 @@ class TestBoxRequestAction(unittest.TestCase):
         
         # Verificar que se ha creado la solicitud en la base de datos
         box_request = BoxRequestRepo.get_box_request_by_id(self.user_id)
+        print("Debug: Pedido obtenido de la base de datos:", box_request)  # <-- Línea para depuración
         self.assertIsNotNone(box_request)
         self.assertEqual(box_request.customer_name, "Test User")
         self.assertEqual(box_request.total_cost, self.initial_state["total_cost"])
