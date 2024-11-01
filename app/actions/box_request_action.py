@@ -21,6 +21,31 @@ class BoxRequestAction:
         else:
             self.state = {"step": "start", "data": {}}
 
+    def generate_summary(self):
+        """Genera un resumen detallado del pedido."""
+        total_cost = (
+            self.state["data"].get("box_price", 0) + 
+            self.state["data"].get("delivery_cost", 0) + 
+            self.ENGANCHE
+        )
+        delivery_date = datetime.strptime(self.state["data"]["delivery_date"], '%Y-%m-%d %H:%M:%S')
+        formatted_date = delivery_date.strftime('%d de %B de %Y a las %I:%M %p')
+
+        return (f"Resumen del pedido:\n"
+                f"Nombre del solicitante: {self.state['data'].get('full_name')}\n"
+                f"Dirección de entrega: {self.state['data'].get('address')}\n"
+                f"País de destino: {self.state['data'].get('country')}\n"
+                f"Dirección de destino: {self.state['data'].get('destination_address', 'No proporcionada')}\n"
+                f"Tamaño de caja: {self.state['data'].get('box_size')} - {self.state['data'].get('linear_size')} "
+                f"({self.state['data'].get('dimensions')})\n"
+                f"Costo de caja: ${self.state['data'].get('box_price', 0):.2f}\n"
+                f"Costo de entrega: ${self.state['data'].get('delivery_cost', 0):.2f}\n"
+                f"Enganche: ${self.ENGANCHE:.2f}\n"  # Aseguramos que siempre tenga dos decimales
+                f"Fecha y hora de entrega: {formatted_date}\n"
+                f"**Costo total: ${total_cost:.2f}**\n"
+                "¿Deseas confirmar el pedido?")
+    
+
     def get_available_sizes_for_country(self, country):
         """Devuelve las opciones de tamaño y precio según el país."""
         if country in pricing_data:
@@ -114,7 +139,15 @@ class BoxRequestAction:
                 self.state["data"]["total_cost"] = total_cost
 
                 BoxRequestStateRepo.update_state(self.user_id, self.state["step"], self.state["data"])
-
+                
+                # Formato de fecha y hora legible para humanos
+                def format_human_readable_datetime(date_str):
+                    try:
+                        date_obj = datetime.strptime(date_str, '%Y-%m-%d %H:%M:%S')
+                        return date_obj.strftime('%d de %B de %Y a las %I:%M %p')
+                    except ValueError:
+                        return date_str  # En caso de error, devolver el valor original
+        
                 return (f"Resumen del pedido:\n"
                         f"Nombre del solicitante: {self.state['data']['full_name']}\n"
                         f"Dirección de entrega: {self.state['data']['address']}\n"
@@ -125,6 +158,7 @@ class BoxRequestAction:
                         f"Costo de caja: ${self.state['data']['box_price']:.2f}\n"
                         f"Costo de entrega: ${self.state['data']['delivery_cost']:.2f}\n"
                         f"Enganche: ${self.ENGANCHE}\n"
+                        f"Fecha y hora de entrega: {format_human_readable_datetime(self.state['data']['delivery_date'])}\n"
                         f"**Costo total: ${total_cost:.2f}**\n"
                         "¿Deseas confirmar el pedido?")
 
