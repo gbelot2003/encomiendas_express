@@ -4,6 +4,7 @@ from app.repositories.box_request_state_repo import BoxRequestStateRepo
 from app.repositories.box_request_repo import BoxRequestRepo
 from app.actions.distance_calculation_action import DistanceCalculationAction
 from app.utils.date_converter import DateConverter
+from app.data.pricing_data import pricing_data
 from datetime import datetime
 
 class BoxRequestAction:
@@ -19,6 +20,17 @@ class BoxRequestAction:
             self.state = {"step": saved_state.step, "data": saved_state.data}
         else:
             self.state = {"step": "start", "data": {}}
+
+    def get_available_sizes_for_country(self, country):
+        """Devuelve las opciones de tamaño y precio según el país."""
+        if country in pricing_data:
+            options = pricing_data[country]
+            options_text = "\n".join(
+                [f"{opt['tamaño']} - {opt['linear_size']} ({opt['dimensions']}) - ${opt['price']:.2f}" for opt in options]
+            )
+            return f"Tamaños disponibles para {country}:\n{options_text}\nPor favor, elige un tamaño."
+        else:
+            return "País no disponible para envíos."
 
     def handle_box_request(self, prompt):
         step = self.state["step"]
@@ -64,14 +76,33 @@ class BoxRequestAction:
         elif step == "ask_destination_address":
             self.state["data"]["destination_address"] = prompt
             self.state["step"] = "ask_box_size"
+            selected_country = self.state["data"]["country"]
+            available_sizes = self.get_available_sizes_for_country(selected_country)
             BoxRequestStateRepo.update_state(self.user_id, self.state["step"], self.state["data"])
-            return "Gracias. ¿Qué tamaño de caja necesitas? Tenemos tamaños pequeña, mediana y grande."
+            return available_sizes
 
         elif step == "ask_box_size":
-            self.state["data"]["box_size"] = prompt
-            self.state["step"] = "ask_delivery_date"
-            BoxRequestStateRepo.update_state(self.user_id, self.state["step"], self.state["data"])
-            return "Perfecto. ¿Cuál es la fecha y hora de entrega preferida?"
+            selected_country = self.state["data"]["country"]
+            selected_size = next(
+                (opt for opt in pricing_data[selected_country]
+                 if opt["linear_size"] == prompt or opt["tamaño"].lower() == prompt.lower()),
+                None
+            )
+
+            if selected_size:
+                self.state["data"].update({
+                    "box_size": selected_size["tamaño"],
+                    "linear_size": selected_size["linear_size"],
+                    "dimensions": selected_size["dimensions"],
+                    "box_price": selected_size["price"]
+                })
+                self.state["step"] = "ask_delivery_date"
+                BoxRequestStateRepo.update_state(self.user_id, self.state["step"], self.state["data"])
+
+                return (f"Tamaño seleccionado: {selected_size['tamaño']} - {selected_size['linear_size']} ({selected_size['dimensions']}) - "
+                        f"Precio: ${selected_size['price']:.2f}. Ahora, proporciona la fecha y hora de entrega preferida.")
+            
+            return "Tamaño no válido. Por favor, elige un tamaño de la lista proporcionada."
 
         elif step == "ask_delivery_date":
             try:
@@ -79,27 +110,20 @@ class BoxRequestAction:
                 self.state["data"]["delivery_date"] = delivery_date.strftime('%Y-%m-%d %H:%M:%S')
                 self.state["step"] = "confirm"
                 
-                # Cálculo y asignación del costo total aquí para asegurar su disponibilidad
-                total_cost = self.ENGANCHE + self.state["data"]["delivery_cost"]
+                total_cost = self.ENGANCHE + self.state["data"]["delivery_cost"] + self.state["data"]["box_price"]
                 self.state["data"]["total_cost"] = total_cost
 
                 BoxRequestStateRepo.update_state(self.user_id, self.state["step"], self.state["data"])
 
-                full_name = self.state["data"]["full_name"]
-                address = self.state["data"]["address"]
-                country = self.state["data"]["country"]
-                destination_address = self.state["data"]["destination_address"]
-                box_size = self.state["data"]["box_size"]
-                delivery_cost = self.state["data"]["delivery_cost"]
-
                 return (f"Resumen del pedido:\n"
-                        f"Nombre del solicitante: {full_name}\n"
-                        f"Dirección de entrega: {address}\n"
-                        f"País de destino: {country}\n"
-                        f"Dirección de destino: {destination_address}\n"
-                        f"Tamaño de caja: {box_size}\n"
-                        f"Fecha y hora de entrega: {self.state['data']['delivery_date']}\n"
-                        f"Costo de entrega: ${delivery_cost:.2f}\n"
+                        f"Nombre del solicitante: {self.state['data']['full_name']}\n"
+                        f"Dirección de entrega: {self.state['data']['address']}\n"
+                        f"País de destino: {self.state['data']['country']}\n"
+                        f"Dirección de destino: {self.state['data'].get('destination_address', 'No proporcionada')}\n"  # Uso de .get para prevenir KeyError
+                        f"Tamaño de caja: {self.state['data']['box_size']} - {self.state['data']['linear_size']} "
+                        f"({self.state['data']['dimensions']})\n"
+                        f"Costo de caja: ${self.state['data']['box_price']:.2f}\n"
+                        f"Costo de entrega: ${self.state['data']['delivery_cost']:.2f}\n"
                         f"Enganche: ${self.ENGANCHE}\n"
                         f"**Costo total: ${total_cost:.2f}**\n"
                         "¿Deseas confirmar el pedido?")
@@ -108,7 +132,6 @@ class BoxRequestAction:
                 return "Error al procesar la fecha y hora de entrega. Usa un formato como 'hoy a las 8 pm' o 'mañana a las 12 pm'."
 
         elif step == "confirm":
-            # Asegurarse de que `total_cost` esté disponible aquí sin errores
             delivery_date = datetime.strptime(self.state["data"]["delivery_date"], '%Y-%m-%d %H:%M:%S')
             BoxRequestRepo.create_box_request(
                 customer_name=self.state["data"]["full_name"],
@@ -120,7 +143,7 @@ class BoxRequestAction:
                 total_cost=self.state["data"]["total_cost"],
                 contact_number=self.user_id,
                 country=self.state["data"]["country"],
-                destination_address=self.state["data"]["destination_address"]
+                destination_address=self.state["data"].get("destination_address", "No proporcionada")  # Uso de .get para evitar error
             )
 
             self.state = {"step": "start", "data": {}}
