@@ -1,6 +1,6 @@
 # archivo: app/utils/date_converter.py
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import re
 import locale
 
@@ -32,14 +32,14 @@ class DateConverter:
     @staticmethod
     def _convert_today(natural_date_str):
         """Convierte expresiones como 'hoy a las 8 pm'."""
-        today = datetime.now()
+        today = datetime.now(timezone.utc)
         hour, minute = DateConverter._extract_time(natural_date_str)
         return today.replace(hour=hour, minute=minute, second=0, microsecond=0)
 
     @staticmethod
     def _convert_tomorrow(natural_date_str):
         """Convierte expresiones como 'mañana a las 12 pm'."""
-        tomorrow = datetime.now() + timedelta(days=1)
+        tomorrow = datetime.now(timezone.utc) + timedelta(days=1)
         hour, minute = DateConverter._extract_time(natural_date_str)
         return tomorrow.replace(hour=hour, minute=minute, second=0, microsecond=0)
 

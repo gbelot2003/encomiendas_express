@@ -1,7 +1,7 @@
 # tests/test_box_request_action.py
 
 import unittest
-from datetime import datetime
+from datetime import datetime, timezone
 from app import create_app  # Asegúrate de que `create_app` sea tu función de fábrica para Flask
 from app.actions.box_request_action import BoxRequestAction
 
@@ -25,7 +25,7 @@ class TestBoxRequestActionSummary(unittest.TestCase):
             "dimensions": "24\"x18\"x18\"",
             "box_price": 160.00,
             "delivery_cost": 27.36,
-            "delivery_date": datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            "delivery_date": datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
         }
         self.action.ENGANCHE = 30.0
         self.action.state["data"]["total_cost"] = (
