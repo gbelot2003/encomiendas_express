@@ -6,6 +6,7 @@ from app.actions.distance_calculation_action import DistanceCalculationAction
 from app.utils.date_converter import DateConverter
 from app.data.pricing_data import pricing_data
 from datetime import datetime
+from app.extensions import db
 
 class BoxRequestAction:
     ALLOWED_COUNTRIES = ["Honduras", "El Salvador", "Guatemala", "Nicaragua", "Mexico"]
@@ -44,7 +45,6 @@ class BoxRequestAction:
                 f"Fecha y hora de entrega: {formatted_date}\n"
                 f"**Costo total: ${total_cost:.2f}**\n"
                 "¿Deseas confirmar el pedido?")
-    
 
     def get_available_sizes_for_country(self, country):
         """Devuelve las opciones de tamaño y precio según el país."""
@@ -82,7 +82,7 @@ class BoxRequestAction:
 
             self.state["data"]["delivery_distance"] = distance
             self.state["data"]["delivery_cost"] = cost
-            self.state["step"] = "ask_country"
+            self.state["step"] = "ask_country"  # Asegúrate de que esta línea se ejecute
             BoxRequestStateRepo.update_state(self.user_id, self.state["step"], self.state["data"])
 
             return (f"La distancia a la dirección de entrega es de aproximadamente {distance:.2f} millas. "
@@ -93,10 +93,20 @@ class BoxRequestAction:
             if prompt not in self.ALLOWED_COUNTRIES:
                 return "País no válido. Por favor, elige uno de los siguientes: Honduras, El Salvador, Guatemala, Nicaragua, o México."
 
+            # Guardar el país seleccionado en el estado
             self.state["data"]["country"] = prompt
+
+            # Obtener los tamaños disponibles para el país
+            available_sizes = self.get_available_sizes_for_country(prompt)
+
+            # Cambia al paso "ask_destination_address" después de mostrar los tamaños
             self.state["step"] = "ask_destination_address"
+
+            # Guardar el estado actualizado
             BoxRequestStateRepo.update_state(self.user_id, self.state["step"], self.state["data"])
-            return "Proporciónanos la dirección completa de destino en el país seleccionado."
+
+            # Retornar el mensaje con los tamaños disponibles en el país seleccionado
+            return available_sizes
 
         elif step == "ask_destination_address":
             self.state["data"]["destination_address"] = prompt
@@ -157,7 +167,7 @@ class BoxRequestAction:
                         f"({self.state['data']['dimensions']})\n"
                         f"Costo de caja: ${self.state['data']['box_price']:.2f}\n"
                         f"Costo de entrega: ${self.state['data']['delivery_cost']:.2f}\n"
-                        f"Enganche: ${self.ENGANCHE}\n"
+                        f"Enganche: ${self.ENGANCHE:.2f}\n"
                         f"Fecha y hora de entrega: {format_human_readable_datetime(self.state['data']['delivery_date'])}\n"
                         f"**Costo total: ${total_cost:.2f}**\n"
                         "¿Deseas confirmar el pedido?")
@@ -167,19 +177,24 @@ class BoxRequestAction:
 
         elif step == "confirm":
             delivery_date = datetime.strptime(self.state["data"]["delivery_date"], '%Y-%m-%d %H:%M:%S')
-            BoxRequestRepo.create_box_request(
-                customer_name=self.state["data"]["full_name"],
-                address=self.state["data"]["address"],
-                box_size=self.state["data"]["box_size"],
-                delivery_date=delivery_date,
-                engagement_fee=self.ENGANCHE,
-                delivery_cost=self.state["data"]["delivery_cost"],
-                total_cost=self.state["data"]["total_cost"],
-                contact_number=self.user_id,
-                country=self.state["data"]["country"],
-                destination_address=self.state["data"].get("destination_address", "No proporcionada")  # Uso de .get para evitar error
-            )
 
+            try:
+                BoxRequestRepo.create_box_request(
+                    customer_name=self.state["data"]["full_name"],
+                    address=self.state["data"]["address"],
+                    box_size=self.state["data"]["box_size"],
+                    delivery_date=delivery_date,
+                    engagement_fee=self.ENGANCHE,
+                    delivery_cost=self.state["data"]["delivery_cost"],
+                    total_cost=self.state["data"]["total_cost"],
+                    contact_number=self.user_id,
+                    country=self.state["data"]["country"],
+                    destination_address=self.state["data"].get("destination_address", "No proporcionada")
+                )
+            except Exception as e:
+                print("Error al crear el pedido en la base de datos:", e)
+
+            db.session.commit()  # <-- Asegúrate de que la transacción se confirme
             self.state = {"step": "start", "data": {}}
             BoxRequestStateRepo.delete_state(self.user_id)
             return "Pedido confirmado. Gracias por tu solicitud. Enviaremos una notificación con más detalles."
