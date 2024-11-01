@@ -6,8 +6,8 @@ from app.extensions import db
 class BoxRequestRepo:
     
     @staticmethod
-    def create_box_request(customer_name, address, box_size, delivery_date, engagement_fee, delivery_cost, total_cost, contact_number):
-        """Crea y guarda un nuevo pedido de caja en la base de datos."""
+    def create_box_request(customer_name, address, box_size, delivery_date, engagement_fee, delivery_cost, total_cost, contact_number, country, destination_address):
+        """Crea una nueva solicitud de caja en la base de datos."""
         box_request = BoxRequest(
             customer_name=customer_name,
             address=address,
@@ -16,7 +16,9 @@ class BoxRequestRepo:
             engagement_fee=engagement_fee,
             delivery_cost=delivery_cost,
             total_cost=total_cost,
-            contact_number=contact_number
+            contact_number=contact_number,
+            country=country,
+            destination_address=destination_address
         )
         db.session.add(box_request)
         db.session.commit()
