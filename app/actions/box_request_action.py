@@ -111,19 +111,17 @@ class BoxRequestAction:
         elif step == "ask_destination_address":
             self.state["data"]["destination_address"] = prompt
             self.state["step"] = "ask_box_size"
-            selected_country = self.state["data"]["country"]
-            available_sizes = self.get_available_sizes_for_country(selected_country)
             BoxRequestStateRepo.update_state(self.user_id, self.state["step"], self.state["data"])
-            return available_sizes
+            return "Por favor, selecciona el tamaño de la caja."
+
 
         elif step == "ask_box_size":
             selected_country = self.state["data"]["country"]
             selected_size = next(
                 (opt for opt in pricing_data[selected_country]
-                 if opt["linear_size"] == prompt or opt["tamaño"].lower() == prompt.lower()),
+                if opt["linear_size"] == prompt or opt["tamaño"].lower() == prompt.lower()),
                 None
             )
-
             if selected_size:
                 self.state["data"].update({
                     "box_size": selected_size["tamaño"],
@@ -133,7 +131,6 @@ class BoxRequestAction:
                 })
                 self.state["step"] = "ask_delivery_date"
                 BoxRequestStateRepo.update_state(self.user_id, self.state["step"], self.state["data"])
-
                 return (f"Tamaño seleccionado: {selected_size['tamaño']} - {selected_size['linear_size']} ({selected_size['dimensions']}) - "
                         f"Precio: ${selected_size['price']:.2f}. Ahora, proporciona la fecha y hora de entrega preferida.")
             
