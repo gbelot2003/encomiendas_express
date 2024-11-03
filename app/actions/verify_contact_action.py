@@ -1,3 +1,4 @@
+# app/actions/verify_contact_action.py
 from app.repositories.contact_repo import ContactRepo
 
 class VerifyContactAction:
@@ -14,5 +15,7 @@ class VerifyContactAction:
             # Si no existe, crear un nuevo contacto con el número de teléfono
             contacto = ContactRepo.crear_contacto(telefono=user_id)
             print("Contacto Creado...")
-            
-        return contacto
+            return "¡Hola! Bienvenido a Encomiendas Express. ¿En qué puedo ayudarte hoy?"
+        
+        print("Contacto Verificado...")
+        return "¡Hola de nuevo! Bienvenido a Encomiendas Express. ¿En qué puedo ayudarte hoy?"

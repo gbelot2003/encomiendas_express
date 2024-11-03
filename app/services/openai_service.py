@@ -17,13 +17,19 @@ class OpenAIService:
     def handle_request(self, prompt, from_number):
         print(f"Usuario: {prompt}")
 
+        messages = []
+
         # Crear una instancia de ActionHandleService
         action_handle_service = ActionHandleService(from_number, prompt)
-        messages = action_handle_service.handle_actions()
+        messages.append = action_handle_service.handle_actions()
 
         # Si BoxRequestAction está activo, retornar exclusivamente su mensaje y evitar llamadas a OpenAI
         if ActionHandleService.box_request_active.get(from_number, False):
             return messages[0]["content"]
+
+
+        messages.append({"role": "user", "content": prompt})
+
 
         # Enviar los mensajes a la API de OpenAI solo si BoxRequestAction no está activo
         response = client.chat.completions.create(
