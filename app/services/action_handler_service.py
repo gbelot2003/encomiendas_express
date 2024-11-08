@@ -50,12 +50,6 @@ class ActionHandleService:
         name_message = name_action.process_name()
         if name_message:
             self.messages.append(name_message)
-        
-        if "distancia a" in self.prompt:
-            destination_address = self.prompt.split("distancia a")[-1].strip()
-            distance_action = DistanceCalculationAction(destination_address)
-            distance_message = distance_action.handle()
-            self.messages.append({"role": "assistant", "content": distance_message})
-            return self.messages
-
+    
+    
         return self.messages
