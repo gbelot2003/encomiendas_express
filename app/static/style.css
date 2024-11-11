@@ -16,7 +16,6 @@ body {
     padding: 16px;
     border-bottom: 2px solid #ddd;
     border-radius: 10px 10px 0 0;
-
 }
 
 .whatsapp-header img {
@@ -34,6 +33,9 @@ body {
     height: 60vh;
     padding: 15px;
     overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end; /* Mantener los mensajes alineados en la parte inferior */
 }
 
 .message-container {
