@@ -29,13 +29,13 @@ body {
 
 .chat-container {
     background-color: #e5ddd5;
-    background-image: url("http://localhost:5000/static/background.jpg") !important;
+    background-image: url("/static/background.jpg") !important;
     height: 60vh;
     padding: 15px;
-    overflow-y: auto;
+    overflow-y: auto; /* Habilita el scroll vertical */
     display: flex;
     flex-direction: column;
-    justify-content: flex-end; /* Mantener los mensajes alineados en la parte inferior */
+    justify-content: flex-end;/* Mantener los mensajes alineados en la parte inferior */
 }
 
 .message-container {

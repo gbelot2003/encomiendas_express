@@ -12,6 +12,10 @@ class BoxRequestAction:
     COST_PER_MILE = 1.0  # Costo por milla
     BASE_LOCATION = "107 Peach Lane, Schertz, Texas 78154"  # Dirección base de la empresa
     ENGANCHE = 30.0  # Costo de enganche fijo
+    MAX_DISTANCE = 35.0  # Límite máximo de distancia en millas
+    ACTIVATION_PHRASES = ["solicitar caja", "quiero solicitar una caja", "quiero abrir un pedido", "abrir un pedido", "quiero solicitar el servicio de envios", 
+                          "solicitar un envio", "quiero solicitar un envio"]
+
 
     def __init__(self, user_id):
         self.user_id = user_id
@@ -40,11 +44,10 @@ class BoxRequestAction:
                 f"({self.state['data'].get('dimensions')})\n"
                 f"Costo de caja: ${self.state['data'].get('box_price', 0):.2f}\n"
                 f"Costo de entrega: ${self.state['data'].get('delivery_cost', 0):.2f}\n"
-                f"Enganche: ${self.ENGANCHE:.2f}\n"  # Aseguramos que siempre tenga dos decimales
+                f"Enganche: ${self.ENGANCHE:.2f}\n"
                 f"Fecha y hora de entrega: {formatted_date}\n"
                 f"**Costo total: ${total_cost:.2f}**\n"
                 "¿Deseas confirmar el pedido?")
-    
 
     def get_available_sizes_for_country(self, country):
         """Devuelve las opciones de tamaño y precio según el país."""
@@ -61,10 +64,12 @@ class BoxRequestAction:
         step = self.state["step"]
         print(f"Current step: {step}, Received prompt: {prompt}")
 
-        if step == "start":
+        # Activar el flujo si se encuentra alguna frase en el prompt
+        if step == "start" and any(phrase in prompt.lower() for phrase in self.ACTIVATION_PHRASES):
             self.state["step"] = "ask_name"
             BoxRequestStateRepo.update_state(self.user_id, self.state["step"], self.state["data"])
             return "Por favor, proporciona tu nombre completo para el pedido."
+
 
         elif step == "ask_name":
             self.state["data"]["full_name"] = prompt
@@ -80,6 +85,12 @@ class BoxRequestAction:
             if distance is None or cost is None:
                 return "No se encontraron coordenadas para la dirección proporcionada. Por favor, verifica la dirección e inténtalo de nuevo."
 
+            # Verificar si la distancia supera el límite permitido
+            if distance > self.MAX_DISTANCE:
+                return (f"La distancia de {distance:.2f} millas excede el límite máximo de {self.MAX_DISTANCE} millas "
+                        "para entregas. Por favor, comunícate con nuestra oficina para más detalles.")
+
+            # Si la distancia está dentro del límite, continuar con el flujo normal
             self.state["data"]["delivery_distance"] = distance
             self.state["data"]["delivery_cost"] = cost
             self.state["step"] = "ask_country"
@@ -152,7 +163,7 @@ class BoxRequestAction:
                         f"Nombre del solicitante: {self.state['data']['full_name']}\n"
                         f"Dirección de entrega: {self.state['data']['address']}\n"
                         f"País de destino: {self.state['data']['country']}\n"
-                        f"Dirección de destino: {self.state['data'].get('destination_address', 'No proporcionada')}\n"  # Uso de .get para prevenir KeyError
+                        f"Dirección de destino: {self.state['data'].get('destination_address', 'No proporcionada')}\n"
                         f"Tamaño de caja: {self.state['data']['box_size']} - {self.state['data']['linear_size']} "
                         f"({self.state['data']['dimensions']})\n"
                         f"Costo de caja: ${self.state['data']['box_price']:.2f}\n"
@@ -177,7 +188,7 @@ class BoxRequestAction:
                 total_cost=self.state["data"]["total_cost"],
                 contact_number=self.user_id,
                 country=self.state["data"]["country"],
-                destination_address=self.state["data"].get("destination_address", "No proporcionada")  # Uso de .get para evitar error
+                destination_address=self.state["data"].get("destination_address", "No proporcionada")
             )
 
             self.state = {"step": "start", "data": {}}

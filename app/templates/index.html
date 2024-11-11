@@ -136,11 +136,12 @@
             // Crear el contenido HTML del mensaje
             messageElement.innerHTML = `
                 <span>${message}</span>
-                <span class="message-time">${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>`;
+                <span class="message-time">${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+            `;
 
             logDiv.appendChild(messageElement);
 
-            // Desplazarse automáticamente al final
+            // Desplazarse automáticamente al final del chat
             logDiv.scrollTop = logDiv.scrollHeight;
         }
     </script>
