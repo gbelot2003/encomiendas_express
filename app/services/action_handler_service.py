@@ -9,6 +9,8 @@ from app.repositories.chromadb_repo import ChromaDBRepo
 from app.services.conversation_history_service import ConversationHistoryAction
 
 class ActionHandleService:
+    # Variable de clase para rastrear si se ha enviado el mensaje de bienvenida por usuario
+    has_welcomed_user = {}
     # Tiempo de expiración para el flujo de BoxRequestAction
     EXPIRATION_TIME = timedelta(minutes=10)
     # Variable de clase para rastrear el estado de BoxRequestAction con timestamps
@@ -20,9 +22,24 @@ class ActionHandleService:
         self.messages = []
         self.box_request_action = BoxRequestAction(user_id)  # Instancia de BoxRequestAction
 
+        # Enviar mensaje de bienvenida si es la primera interacción
+        if self.user_id not in ActionHandleService.has_welcomed_user:
+            ActionHandleService.has_welcomed_user[self.user_id] = True
+            self.messages.append(self.send_welcome_message())
+
         # Inicializar el estado de la variable de bloqueo por usuario con None si es la primera vez
         if self.user_id not in ActionHandleService.box_request_active:
             ActionHandleService.box_request_active[self.user_id] = None
+
+    def send_welcome_message(self):
+        """Mensaje de bienvenida que explica las frases de activación."""
+        return {
+            "role": "assistant",
+            "content": ("¡Hola! Bienvenido a nuestro servicio de Encomiendas Express. "
+                        "Puedes crear un pedido de caja en cualquier momento usando frases como "
+                        "\"solicitar caja\", \"quiero solicitar una caja\", o \"quiero abrir un pedido\". "
+                        "Estamos aquí para ayudarte con tus envíos.")
+        }
 
     def handle_actions(self):
         # Verificar si el flujo está activo y ha expirado
@@ -32,7 +49,7 @@ class ActionHandleService:
             ActionHandleService.box_request_active[self.user_id] = None
 
         # Activar o continuar el flujo de BoxRequestAction si no ha expirado
-        if "c" in self.prompt or ActionHandleService.box_request_active.get(self.user_id):
+        if any(phrase in self.prompt.lower() for phrase in self.box_request_action.ACTIVATION_PHRASES) or ActionHandleService.box_request_active.get(self.user_id):
             # Marcar el inicio del flujo si es la primera vez
             if not ActionHandleService.box_request_active[self.user_id]:
                 ActionHandleService.box_request_active[self.user_id] = datetime.now()
