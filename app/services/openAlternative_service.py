@@ -12,6 +12,8 @@ class OpenAlternativeService:
     
     def handle_request(self, prompt, from_number):
         print(f"Usuario: {prompt}")
+        
+        messages = [{"role": "user", "content": prompt}]
 
         # Enviar los mensajes a la API de OpenAI solo si BoxRequestAction no está activo
         response = client.chat.completions.create(

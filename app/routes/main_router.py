@@ -1,6 +1,7 @@
 # app/routes/main_router.py
 from flask import jsonify, render_template, redirect, url_for, flash, request, session
 
+from app.services.openAlternative_service import OpenAlternativeService
 from app.services.openai_service import OpenAIService
 
 
@@ -16,6 +17,16 @@ def configure_routes(app):
         from_number = data.get('from_number', '+14155551234')
 
         response = OpenAIService().handle_request(message_body, from_number)
+        
+        return jsonify({"status": "success", "response": response})
+
+    @app.route("/api/message/alter", methods=['POST'])
+    def send_message_two():
+        data = request.json
+        message_body = data.get('message', 'Este es un mensaje simulado desde Twilio')
+        from_number = data.get('from_number', '+14155551234')
+
+        response = OpenAlternativeService().handle_request(message_body, from_number)
         
         return jsonify({"status": "success", "response": response})
         
